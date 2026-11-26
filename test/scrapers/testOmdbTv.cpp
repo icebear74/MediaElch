@@ -117,6 +117,7 @@ TEST_CASE("OmdbTv scrapes season episodes", "[tv][OMDb][OmdbTv][season]")
         REQUIRE(pilot != nullptr);
         CHECK(pilot->title() == "Pilot");
         CHECK(pilot->firstAired().isValid());
+        CHECK(pilot->imdbId().isValid());
     }
 }
 
@@ -140,6 +141,22 @@ TEST_CASE("OmdbTv scrapes single episode details", "[tv][OMDb][OmdbTv][episode]"
         CHECK(episode.title() == "Pilot");
         CHECK(episode.firstAired().year() == 2008);
         CHECK_THAT(episode.overview(), Contains("Walter White"));
+        CHECK(episode.ratings().hasSource("imdb"));
+    }
+
+    SECTION("Breaking Bad S01E01 loaded by show and episode numbers")
+    {
+        EpisodeIdentifier id("tt0903747", SeasonNumber(1), EpisodeNumber(1), SeasonOrder::Aired);
+        EpisodeScrapeJob::Config config{id, Locale::English, mediaelch::allEpisodeScraperInfos()};
+
+        auto scrapeJob = std::make_unique<OmdbTvEpisodeScrapeJob>(getOmdbApi(), config);
+        test::scrapeEpisodeSync(scrapeJob.get());
+        auto& episode = scrapeJob->episode();
+
+        CHECK(episode.title() == "Pilot");
+        CHECK(episode.seasonNumber() == SeasonNumber(1));
+        CHECK(episode.episodeNumber() == EpisodeNumber(1));
+        CHECK(episode.imdbId().isValid());
         CHECK(episode.ratings().hasSource("imdb"));
     }
 }

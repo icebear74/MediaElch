@@ -79,6 +79,21 @@ TEST_CASE("FernsehserienDe scrapes episode details", "[episode][FernsehserienDe]
         test::scraper::compareAgainstReference(episode, "scrapers/fernsehserien_de/Black-Mirror-S04E05-no-id");
     }
 
+    SECTION("Loads season 1 episode when guide omits season numbers")
+    {
+        EpisodeIdentifier id("der-amsterdam-krimi", SeasonNumber(1), EpisodeNumber(1), SeasonOrder::Aired);
+        EpisodeScrapeJob::Config config{id, Locale("de-DE"), allEpisodeScraperInfos()};
+
+        auto scrapeJob = std::make_unique<FernsehserienDeEpisodeScrapeJob>(*api, config);
+        test::scrapeEpisodeSync(scrapeJob.get());
+        const auto& episode = scrapeJob->episode();
+
+        CHECK_FALSE(scrapeJob->hasError());
+        CHECK_FALSE(episode.title().isEmpty());
+        CHECK(episode.seasonNumber() == SeasonNumber(1));
+        CHECK(episode.episodeNumber() == EpisodeNumber(1));
+    }
+
     SECTION("Returns error for non-existent episode via season/episode number")
     {
         // This show has no episodes on fernsehserien.de!

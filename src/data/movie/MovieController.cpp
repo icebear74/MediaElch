@@ -65,14 +65,16 @@ bool MovieController::saveData(MediaCenterInterface* mediaCenterInterface)
     if (!m_infoLoaded) {
         m_infoLoaded = saved;
     }
-    m_movie->setChanged(false);
-    m_movie->clearImages();
-    m_movie->images().clearExtraFanartData();
-    m_movie->setSyncNeeded(true);
+    if (saved) {
+        m_movie->setChanged(false);
+        m_movie->clearImages();
+        m_movie->images().clearExtraFanartData();
+        m_movie->setSyncNeeded(true);
 
-    const auto subtitles = m_movie->subtitles();
-    for (Subtitle* subtitle : subtitles) {
-        subtitle->setChanged(false);
+        const auto subtitles = m_movie->subtitles();
+        for (Subtitle* subtitle : subtitles) {
+            subtitle->setChanged(false);
+        }
     }
     return saved;
 }

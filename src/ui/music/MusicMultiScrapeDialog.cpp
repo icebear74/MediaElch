@@ -5,6 +5,7 @@
 #include "data/music/Artist.h"
 #include "globals/Manager.h"
 #include "settings/Settings.h"
+#include "ui/notifications/NotificationBox.h"
 
 MusicMultiScrapeDialog::MusicMultiScrapeDialog(QWidget* parent) :
     QDialog(parent), ui(new Ui::MusicMultiScrapeDialog), m_executed(false)
@@ -193,11 +194,15 @@ void MusicMultiScrapeDialog::scrapeNext()
     }
 
     if ((m_currentAlbum != nullptr) && ui->chkAutoSave->isChecked()) {
-        m_currentAlbum->controller()->saveData(Manager::instance()->mediaCenterInterface());
+        if (!m_currentAlbum->controller()->saveData(Manager::instance()->mediaCenterInterface())) {
+            NotificationBox::instance()->showError(tr("Could not save album \"%1\".").arg(m_currentAlbum->title()));
+        }
     }
 
     if ((m_currentArtist != nullptr) && ui->chkAutoSave->isChecked()) {
-        m_currentArtist->controller()->saveData(Manager::instance()->mediaCenterInterface());
+        if (!m_currentArtist->controller()->saveData(Manager::instance()->mediaCenterInterface())) {
+            NotificationBox::instance()->showError(tr("Could not save artist \"%1\".").arg(m_currentArtist->name()));
+        }
     }
 
     if (m_queue.isEmpty()) {

@@ -34,6 +34,22 @@ TEST_CASE("FernsehserienDe scrapes seasons", "[season][FernsehserienDe][load_dat
         test::scraper::compareAgainstReference(episodes, "scrapers/fernsehserien_de/Black-Mirror-S05");
     }
 
+    SECTION("Loads requested season when guide omits season numbers")
+    {
+        SeasonScrapeJob::Config config{ShowIdentifier("der-amsterdam-krimi"),
+            Locale("de-DE"),
+            {SeasonNumber(1)},
+            SeasonOrder::Aired,
+            allEpisodeScraperInfos()};
+
+        auto scrapeJob = std::make_unique<FernsehserienDeSeasonScrapeJob>(*api, config);
+        test::scrapeSeasonSync(scrapeJob.get());
+        const auto& episodes = scrapeJob->episodes();
+
+        REQUIRE_FALSE(episodes.isEmpty());
+        CHECK(episodes.contains(qMakePair(SeasonNumber(1), EpisodeNumber(1))));
+    }
+
     SECTION("Loads details for all seasons of Black Mirror")
     {
         const int allEpisodesCount = 28; // as of 2023-06-03

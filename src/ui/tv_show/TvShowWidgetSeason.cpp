@@ -184,10 +184,14 @@ void TvShowWidgetSeason::onSaveInformation()
     }
     onSetEnabled(false);
     m_savingWidget->show();
-    m_show->saveData(Manager::instance()->mediaCenterInterfaceTvShow());
+    const bool saved = m_show->saveData(Manager::instance()->mediaCenterInterfaceTvShow());
     m_savingWidget->hide();
     onSetEnabled(true);
-    NotificationBox::instance()->showSuccess(tr("<b>\"%1\"</b> saved").arg(m_show->title()));
+    if (saved) {
+        NotificationBox::instance()->showSuccess(tr("<b>\"%1\"</b> saved").arg(m_show->title()));
+    } else {
+        NotificationBox::instance()->showError(tr("Could not save TV show \"%1\".").arg(m_show->title()));
+    }
 }
 
 void TvShowWidgetSeason::onSetEnabled(bool enabled)

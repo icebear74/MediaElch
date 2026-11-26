@@ -281,10 +281,12 @@ bool TvShow::saveData(MediaCenterInterface* mediaCenterInterface)
         m_infoLoaded = saved;
     }
 
-    setSyncNeeded(true);
-    setChanged(false);
-    clearImages();
-    clearExtraFanartData();
+    if (saved) {
+        setSyncNeeded(true);
+        setChanged(false);
+        clearImages();
+        clearExtraFanartData();
+    }
     return saved;
 }
 

@@ -49,8 +49,12 @@ QByteArray MovieXmlWriterGeneric::getMovieXml(bool testMode)
     }
 
     if (writeThumbUrlsToNfo()) {
+        qsizetype posterBytesWritten = 0;
         const auto& posters = m_movie.images().posters();
         for (const Poster& poster : posters) {
+            if (!canWriteThumb(poster, posterBytesWritten)) {
+                continue;
+            }
             xml.writeStartElement("thumb");
             QString aspect = poster.aspect.isEmpty() ? "poster" : poster.aspect;
             xml.writeAttribute("aspect", aspect);
@@ -60,9 +64,13 @@ QByteArray MovieXmlWriterGeneric::getMovieXml(bool testMode)
         }
 
         if (!m_movie.images().backdrops().isEmpty()) {
+            qsizetype backdropBytesWritten = 0;
             xml.writeStartElement("fanart");
             const auto& backdrops = m_movie.images().backdrops();
             for (const Poster& poster : backdrops) {
+                if (!canWriteThumb(poster, backdropBytesWritten)) {
+                    continue;
+                }
                 xml.writeStartElement("thumb");
                 xml.writeAttribute("preview", poster.thumbUrl.toString());
                 xml.writeCharacters(poster.originalUrl.toString());

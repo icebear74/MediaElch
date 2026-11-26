@@ -65,10 +65,10 @@ bool AlbumController::saveData(MediaCenterInterface* mediaCenterInterface)
     if (!m_infoLoaded) {
         m_infoLoaded = saved;
     }
-    m_album->setHasChanged(false);
-    m_album->clearImages();
-    m_album->bookletModel()->clear();
     if (saved) {
+        m_album->setHasChanged(false);
+        m_album->clearImages();
+        m_album->bookletModel()->clear();
         emit sigSaved(m_album);
     }
     return saved;

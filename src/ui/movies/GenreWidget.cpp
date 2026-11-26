@@ -278,15 +278,24 @@ void GenreWidget::addMovie()
  */
 void GenreWidget::onSaveInformation()
 {
+    int failedSaves = 0;
     for (Movie* movie : Manager::instance()->movieModel()->movies()) {
         if (movie->hasChanged()) {
-            movie->controller()->saveData(Manager::instance()->mediaCenterInterface());
+            if (!movie->controller()->saveData(Manager::instance()->mediaCenterInterface())) {
+                ++failedSaves;
+            }
         }
     }
 
-    m_addedGenres.clear();
+    if (failedSaves == 0) {
+        m_addedGenres.clear();
+    }
     loadGenres();
-    NotificationBox::instance()->showSuccess(tr("All Movies Saved"));
+    if (failedSaves == 0) {
+        NotificationBox::instance()->showSuccess(tr("All Movies Saved"));
+    } else {
+        NotificationBox::instance()->showError(tr("%n movie(s) could not be saved.", "", failedSaves));
+    }
 }
 
 void GenreWidget::onJumpToMovie(QTableWidgetItem* item)

@@ -447,26 +447,40 @@ void ConcertWidget::onSaveInformation()
     m_savingWidget->show();
 
     if (concerts.count() == 1) {
-        m_concert->controller()->saveData(Manager::instance()->mediaCenterInterfaceConcert());
-        m_concert->controller()->loadData(Manager::instance()->mediaCenterInterfaceConcert(), true);
-        updateConcertInfo();
-        NotificationBox::instance()->showSuccess(tr("<b>\"%1\"</b> Saved").arg(m_concert->title()));
+        Concert* concert = concerts.first();
+        if (concert->controller()->saveData(Manager::instance()->mediaCenterInterfaceConcert())) {
+            concert->controller()->loadData(Manager::instance()->mediaCenterInterfaceConcert(), true);
+            if (m_concert == concert) {
+                updateConcertInfo();
+            }
+            NotificationBox::instance()->showSuccess(tr("<b>\"%1\"</b> Saved").arg(concert->title()));
+        } else {
+            NotificationBox::instance()->showError(tr("Could not save concert \"%1\".").arg(concert->title()));
+        }
     } else {
+        int failedSaves = 0;
         for (Concert* concert : concerts) {
             if (concert->hasChanged()) {
-                concert->controller()->saveData(Manager::instance()->mediaCenterInterfaceConcert());
+                if (!concert->controller()->saveData(Manager::instance()->mediaCenterInterfaceConcert())) {
+                    ++failedSaves;
+                    continue;
+                }
                 concert->controller()->loadData(Manager::instance()->mediaCenterInterfaceConcert(), true);
                 if (m_concert == concert) {
                     updateConcertInfo();
                 }
             }
         }
-        NotificationBox::instance()->showSuccess(tr("Concerts Saved"));
+        if (failedSaves == 0) {
+            NotificationBox::instance()->showSuccess(tr("Concerts Saved"));
+        } else {
+            NotificationBox::instance()->showError(tr("%n concert(s) could not be saved.", "", failedSaves));
+        }
     }
 
     setEnabledTrue();
     m_savingWidget->hide();
-    ui->buttonRevert->setVisible(false);
+    ui->buttonRevert->setVisible(m_concert != nullptr && m_concert->hasChanged());
 }
 
 /**
@@ -477,9 +491,13 @@ void ConcertWidget::onSaveAll()
     setDisabledTrue();
     m_savingWidget->show();
 
+    int failedSaves = 0;
     for (Concert* concert : Manager::instance()->concertModel()->concerts()) {
         if (concert->hasChanged()) {
-            concert->controller()->saveData(Manager::instance()->mediaCenterInterfaceConcert());
+            if (!concert->controller()->saveData(Manager::instance()->mediaCenterInterfaceConcert())) {
+                ++failedSaves;
+                continue;
+            }
             concert->controller()->loadData(Manager::instance()->mediaCenterInterfaceConcert(), true);
             if (m_concert == concert) {
                 updateConcertInfo();
@@ -488,8 +506,12 @@ void ConcertWidget::onSaveAll()
     }
     setEnabledTrue();
     m_savingWidget->hide();
-    NotificationBox::instance()->showSuccess(tr("All Concerts Saved"));
-    ui->buttonRevert->setVisible(false);
+    if (failedSaves == 0) {
+        NotificationBox::instance()->showSuccess(tr("All Concerts Saved"));
+    } else {
+        NotificationBox::instance()->showError(tr("%n concert(s) could not be saved.", "", failedSaves));
+    }
+    ui->buttonRevert->setVisible(m_concert != nullptr && m_concert->hasChanged());
 }
 
 void ConcertWidget::onRevertChanges()

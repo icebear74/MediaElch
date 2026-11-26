@@ -658,7 +658,7 @@ void TvShowWidgetEpisode::onSaveInformation()
     const bool success = m_episode->saveData(Manager::instance()->mediaCenterInterfaceTvShow());
     onSetEnabled(true);
     m_savingWidget->hide();
-    ui->buttonRevert->setVisible(false);
+    ui->buttonRevert->setVisible(m_episode->hasChanged());
 
     if (success) {
         NotificationBox::instance()->showSuccess(tr("Episode Saved"));

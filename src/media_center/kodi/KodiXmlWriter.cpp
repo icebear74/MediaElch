@@ -3,10 +3,19 @@
 #include "Version.h"
 #include "data/Rating.h"
 
+#include <QByteArray>
 #include <QDateTime>
+#include <QXmlStreamWriter>
 
 namespace mediaelch {
 namespace kodi {
+
+namespace {
+
+constexpr qsizetype MaxArtworkXmlBytes = 60 * 1024;
+constexpr qsizetype ArtworkFormattingAllowance = 32;
+
+} // namespace
 
 void KodiXmlWriter::addMediaelchGeneratorTag(QXmlStreamWriter& xml)
 {
@@ -37,6 +46,31 @@ bool KodiXmlWriter::writeThumbUrlsToNfo() const
 void KodiXmlWriter::setWriteThumbUrlsToNfo(bool writeThumbUrlsToNfo)
 {
     m_writeThumbUrlsToNfo = writeThumbUrlsToNfo;
+}
+
+bool KodiXmlWriter::canWriteThumb(const Poster& poster, qsizetype& bytesWritten) const
+{
+    QByteArray thumbXml;
+    QXmlStreamWriter xml(&thumbXml);
+    xml.writeStartElement("thumb");
+    xml.writeAttribute("language", poster.language);
+    xml.writeAttribute("aspect", poster.aspect);
+    xml.writeAttribute("preview", poster.thumbUrl.toString());
+    xml.writeAttribute("type", "season");
+    xml.writeAttribute("season", poster.season.toString());
+    if (poster.originalSize.isValid()) {
+        xml.writeAttribute(
+            "dim", QString("%1x%2").arg(poster.originalSize.width()).arg(poster.originalSize.height()));
+    }
+    xml.writeCharacters(poster.originalUrl.toString());
+    xml.writeEndElement();
+
+    const qsizetype additionalBytes = thumbXml.size() + ArtworkFormattingAllowance;
+    if (additionalBytes > MaxArtworkXmlBytes - bytesWritten) {
+        return false;
+    }
+    bytesWritten += additionalBytes;
+    return true;
 }
 
 void KodiXmlWriter::writeActors(QXmlStreamWriter& xml, const Actors& actors) const

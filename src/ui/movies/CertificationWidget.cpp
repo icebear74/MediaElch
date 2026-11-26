@@ -276,14 +276,23 @@ void CertificationWidget::addMovie()
  */
 void CertificationWidget::onSaveInformation()
 {
+    int failedSaves = 0;
     for (Movie* movie : Manager::instance()->movieModel()->movies()) {
         if (movie->hasChanged()) {
-            movie->controller()->saveData(Manager::instance()->mediaCenterInterface());
+            if (!movie->controller()->saveData(Manager::instance()->mediaCenterInterface())) {
+                ++failedSaves;
+            }
         }
     }
-    m_addedCertifications.clear();
+    if (failedSaves == 0) {
+        m_addedCertifications.clear();
+    }
     loadCertifications();
-    NotificationBox::instance()->showSuccess(tr("All Movies Saved"));
+    if (failedSaves == 0) {
+        NotificationBox::instance()->showSuccess(tr("All Movies Saved"));
+    } else {
+        NotificationBox::instance()->showError(tr("%n movie(s) could not be saved.", "", failedSaves));
+    }
 }
 
 void CertificationWidget::onJumpToMovie(QTableWidgetItem* item)

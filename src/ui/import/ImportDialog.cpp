@@ -642,6 +642,7 @@ void ImportDialog::onMovingFilesFinished()
 {
     ui->progressBar->setValue(100);
     m_timer.stop();
+    bool mediaInfoSaveFailed = false;
     if (m_type == "movie") {
         m_movie->setFiles(m_newFiles);
         m_movie->setInSeparateFolder(m_separateFolders);
@@ -649,8 +650,10 @@ void ImportDialog::onMovingFilesFinished()
             m_movie->setFileLastModified(QFileInfo(m_newFiles.first()).lastModified());
         }
         Q_UNUSED(m_movie->controller()->loadStreamDetailsFromFile());
-        m_movie->controller()->saveData(Manager::instance()->mediaCenterInterface());
-        m_movie->controller()->loadData(Manager::instance()->mediaCenterInterface());
+        mediaInfoSaveFailed = !m_movie->controller()->saveData(Manager::instance()->mediaCenterInterface());
+        if (!mediaInfoSaveFailed) {
+            m_movie->controller()->loadData(Manager::instance()->mediaCenterInterface());
+        }
 
         mediaelch::MoviePersistence persistence{*Manager::instance()->database()};
         persistence.addMovie(m_movie, mediaelch::DirectoryPath(importDir()));
@@ -666,8 +669,10 @@ void ImportDialog::onMovingFilesFinished()
         m_episode->setFiles(m_newFiles);
         Q_UNUSED(m_episode->loadStreamDetailsFromFile());
         m_show->addEpisode(m_episode);
-        m_episode->saveData(Manager::instance()->mediaCenterInterfaceTvShow());
-        m_episode->loadData(Manager::instance()->mediaCenterInterfaceTvShow(), true, false);
+        mediaInfoSaveFailed = !m_episode->saveData(Manager::instance()->mediaCenterInterfaceTvShow());
+        if (!mediaInfoSaveFailed) {
+            m_episode->loadData(Manager::instance()->mediaCenterInterfaceTvShow(), true, false);
+        }
         mediaelch::TvShowPersistence persistence{*Manager::instance()->database()};
         persistence.add(m_episode, mediaelch::DirectoryPath(importDir()), m_show->databaseId());
 
@@ -688,8 +693,10 @@ void ImportDialog::onMovingFilesFinished()
     } else if (m_type == "concert") {
         m_concert->setFiles(m_newFiles);
         Q_UNUSED(m_concert->controller()->loadStreamDetailsFromFile());
-        m_concert->controller()->saveData(Manager::instance()->mediaCenterInterface());
-        m_concert->controller()->loadData(Manager::instance()->mediaCenterInterface());
+        mediaInfoSaveFailed = !m_concert->controller()->saveData(Manager::instance()->mediaCenterInterface());
+        if (!mediaInfoSaveFailed) {
+            m_concert->controller()->loadData(Manager::instance()->mediaCenterInterface());
+        }
         mediaelch::ConcertPersistence persistence{*Manager::instance()->database()};
         persistence.add(m_concert, mediaelch::DirectoryPath(importDir()));
         Manager::instance()->database()->db().commit();
@@ -697,9 +704,15 @@ void ImportDialog::onMovingFilesFinished()
         m_concert = nullptr;
     }
 
-    Notificator::instance()->notify(Notificator::Class::Information,
-        tr("Import finished"),
-        tr("Import of %n files has finished", "", qsizetype_to_int(files().count())));
+    if (mediaInfoSaveFailed) {
+        Notificator::instance()->notify(Notificator::Class::Critical,
+            tr("Metadata could not be saved"),
+            tr("The import finished, but its metadata could not be saved."));
+    } else {
+        Notificator::instance()->notify(Notificator::Class::Information,
+            tr("Import finished"),
+            tr("Import of %n files has finished", "", qsizetype_to_int(files().count())));
+    }
 
     ui->loading->setVisible(false);
     ui->badgeSuccess->setText(tr("Import has finished"));

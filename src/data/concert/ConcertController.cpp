@@ -49,10 +49,12 @@ bool ConcertController::saveData(MediaCenterInterface* mediaCenterInterface)
     if (!m_infoLoaded) {
         m_infoLoaded = saved;
     }
-    m_concert->setChanged(false);
-    m_concert->clearImages();
-    m_concert->clearExtraFanartData();
-    m_concert->setSyncNeeded(true);
+    if (saved) {
+        m_concert->setChanged(false);
+        m_concert->clearImages();
+        m_concert->clearExtraFanartData();
+        m_concert->setSyncNeeded(true);
+    }
     return saved;
 }
 

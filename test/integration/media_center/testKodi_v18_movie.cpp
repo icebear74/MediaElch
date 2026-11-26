@@ -7,6 +7,7 @@
 
 #include <QDateTime>
 #include <QDomDocument>
+#include <QUrl>
 #include <chrono>
 
 using namespace std::chrono_literals;
@@ -44,6 +45,32 @@ TEST_CASE("Movie XML writer for Kodi v18", "[data][movie][kodi][nfo]")
         mediaelch::kodi::MovieXmlWriterGeneric writer(mediaelch::KodiVersion(18), movie);
         const QString actual = writer.getMovieXml(true).trimmed();
         test::compareXmlAgainstResourceFile(actual, filename);
+    }
+
+    SECTION("Artwork data stays below Kodi text-field limits")
+    {
+        constexpr int ArtworkCount = 1000;
+        constexpr int ArtworkUrlLength = 1000;
+
+        Movie posterMovie;
+        Movie backdropMovie;
+        for (int i = 0; i < ArtworkCount; ++i) {
+            Poster poster;
+            poster.originalUrl = QUrl("https://example.test/" + QString(ArtworkUrlLength, 'p'));
+            poster.thumbUrl = poster.originalUrl;
+            posterMovie.images().addPoster(poster);
+            backdropMovie.images().addBackdrop(poster);
+        }
+
+        mediaelch::kodi::MovieXmlWriterGeneric posterWriter(mediaelch::KodiVersion(18), posterMovie);
+        mediaelch::kodi::MovieXmlWriterGeneric backdropWriter(mediaelch::KodiVersion(18), backdropMovie);
+        const QByteArray posterXml = posterWriter.getMovieXml(true);
+        const QByteArray backdropXml = backdropWriter.getMovieXml(true);
+
+        CHECK(posterXml.size() < 65535);
+        CHECK(backdropXml.size() < 65535);
+        CHECK(posterXml.count("<thumb") < ArtworkCount);
+        CHECK(backdropXml.count("<thumb") < ArtworkCount);
     }
 
     SECTION("read / write details: Alien 1979")

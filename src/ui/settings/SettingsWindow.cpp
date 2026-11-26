@@ -114,6 +114,7 @@ SettingsWindow::~SettingsWindow()
 void SettingsWindow::show()
 {
     if (!isVisible()) {
+        m_saveCloseHandled = false;
         loadSettings();
         m_settings.beginTransaction();
 

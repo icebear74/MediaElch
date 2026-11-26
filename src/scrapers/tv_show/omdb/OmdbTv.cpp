@@ -40,6 +40,7 @@ OmdbTv::OmdbTv(OmdbTvConfiguration& settings, QObject* parent) : TvScraper(paren
         EpisodeScraperInfo::Director,
         EpisodeScraperInfo::Writer,
         EpisodeScraperInfo::Rating,
+        EpisodeScraperInfo::Thumbnail,
     };
     m_meta.supportedSeasonOrders = {SeasonOrder::Aired};
     m_meta.supportedLanguages = {Locale::English};

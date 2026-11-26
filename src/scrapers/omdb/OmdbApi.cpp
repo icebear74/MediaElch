@@ -147,6 +147,16 @@ void OmdbApi::loadEpisode(const ImdbId& episodeId, ApiCallback callback)
     sendGetRequest(makeApiUrl(urlQuery), std::move(callback));
 }
 
+void OmdbApi::loadEpisode(const ImdbId& showId, int season, int episode, ApiCallback callback)
+{
+    QUrlQuery urlQuery;
+    urlQuery.addQueryItem("i", showId.toString());
+    urlQuery.addQueryItem("Season", QString::number(season));
+    urlQuery.addQueryItem("Episode", QString::number(episode));
+    urlQuery.addQueryItem("plot", "full");
+    sendGetRequest(makeApiUrl(urlQuery), std::move(callback));
+}
+
 QUrl OmdbApi::makeApiUrl(const QUrlQuery& query) const
 {
     QUrlQuery fullQuery(query);

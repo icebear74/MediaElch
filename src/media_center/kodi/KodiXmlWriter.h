@@ -26,6 +26,9 @@ public:
     bool writeThumbUrlsToNfo() const;
     void setWriteThumbUrlsToNfo(bool writeThumbUrlsToNfo);
 
+protected:
+    bool canWriteThumb(const Poster& poster, qsizetype& bytesWritten) const;
+
 private:
     KodiVersion m_version;
     bool m_writeThumbUrlsToNfo = true;

@@ -907,16 +907,20 @@ void MovieWidget::onPlayLocalTrailer()
 void MovieWidget::saveInformation()
 {
     qCDebug(generic) << "[Movie] Save movie";
-    setDisabledTrue();
 
     QVector<Movie*> movies = MovieFilesWidget::instance()->selectedMovies();
     if (movies.isEmpty()) {
+        if (m_movie == nullptr) {
+            return;
+        }
         movies.append(m_movie);
     }
 
+    setDisabledTrue();
     m_savingWidget->show();
     if (movies.count() > 1) {
         int counter = 0;
+        int failedSaves = 0;
         const int moviesToSave = qsizetype_to_int(movies.count());
 
         NotificationBox::instance()->showProgressBar(tr("Saving movies..."), Constants::MovieWidgetProgressMessageId);
@@ -928,7 +932,10 @@ void MovieWidget::saveInformation()
                 NotificationBox::instance()->progressBarProgress(
                     counter, moviesToSave, Constants::MovieWidgetProgressMessageId);
                 QApplication::processEvents();
-                movie->controller()->saveData(Manager::instance()->mediaCenterInterface());
+                if (!movie->controller()->saveData(Manager::instance()->mediaCenterInterface())) {
+                    ++failedSaves;
+                    continue;
+                }
                 movie->controller()->loadData(Manager::instance()->mediaCenterInterface(), true);
                 if (m_movie == movie) {
                     updateMovieInfo();
@@ -936,18 +943,29 @@ void MovieWidget::saveInformation()
             }
         }
         NotificationBox::instance()->hideProgressBar(Constants::MovieWidgetProgressMessageId);
-        NotificationBox::instance()->showSuccess(tr("Movies Saved"));
+        if (failedSaves == 0) {
+            NotificationBox::instance()->showSuccess(tr("Movies Saved"));
+        } else {
+            NotificationBox::instance()->showError(tr("%n movie(s) could not be saved.", "", failedSaves));
+        }
     } else {
+        Movie* movie = movies.first();
         const int id = NotificationBox::instance()->showMessage(tr("Saving movie..."));
-        m_movie->controller()->saveData(Manager::instance()->mediaCenterInterface());
-        m_movie->controller()->loadData(Manager::instance()->mediaCenterInterface(), true);
-        updateMovieInfo();
-        NotificationBox::instance()->removeMessage(id);
-        NotificationBox::instance()->showSuccess(tr("<b>\"%1\"</b> Saved").arg(m_movie->title()));
+        if (movie->controller()->saveData(Manager::instance()->mediaCenterInterface())) {
+            movie->controller()->loadData(Manager::instance()->mediaCenterInterface(), true);
+            if (m_movie == movie) {
+                updateMovieInfo();
+            }
+            NotificationBox::instance()->removeMessage(id);
+            NotificationBox::instance()->showSuccess(tr("<b>\"%1\"</b> Saved").arg(movie->title()));
+        } else {
+            NotificationBox::instance()->removeMessage(id);
+            NotificationBox::instance()->showError(tr("Could not save movie \"%1\".").arg(movie->title()));
+        }
     }
     setEnabledTrue();
     m_savingWidget->hide();
-    ui->buttonRevert->setVisible(false);
+    ui->buttonRevert->setVisible(m_movie != nullptr && m_movie->hasChanged());
 }
 
 /**
@@ -971,6 +989,7 @@ void MovieWidget::saveAll()
     NotificationBox::instance()->progressBarProgress(0, moviesToSave, Constants::MovieWidgetProgressMessageId);
     QApplication::processEvents();
 
+    int failedSaves = 0;
     const auto movies = Manager::instance()->movieModel()->movies();
     for (Movie* movie : movies) {
         if (movie->hasChanged()) {
@@ -978,7 +997,10 @@ void MovieWidget::saveAll()
             NotificationBox::instance()->progressBarProgress(
                 counter, moviesToSave, Constants::MovieWidgetProgressMessageId);
             QApplication::processEvents();
-            movie->controller()->saveData(Manager::instance()->mediaCenterInterface());
+            if (!movie->controller()->saveData(Manager::instance()->mediaCenterInterface())) {
+                ++failedSaves;
+                continue;
+            }
             movie->controller()->loadData(Manager::instance()->mediaCenterInterface(), true);
             if (m_movie == movie) {
                 updateMovieInfo();
@@ -988,8 +1010,12 @@ void MovieWidget::saveAll()
     setEnabledTrue();
     m_savingWidget->hide();
     NotificationBox::instance()->hideProgressBar(Constants::MovieWidgetProgressMessageId);
-    NotificationBox::instance()->showSuccess(tr("All Movies Saved"));
-    ui->buttonRevert->setVisible(false);
+    if (failedSaves == 0) {
+        NotificationBox::instance()->showSuccess(tr("All Movies Saved"));
+    } else {
+        NotificationBox::instance()->showError(tr("%n movie(s) could not be saved.", "", failedSaves));
+    }
+    ui->buttonRevert->setVisible(m_movie != nullptr && m_movie->hasChanged());
 }
 
 /// \brief Revert changes for current movie

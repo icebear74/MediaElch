@@ -64,10 +64,10 @@ bool ArtistController::saveData(MediaCenterInterface* mediaCenterInterface)
     if (!m_infoLoaded) {
         m_infoLoaded = saved;
     }
-    m_artist->setHasChanged(false);
-    m_artist->clearImages();
-    m_artist->clearExtraFanartData();
     if (saved) {
+        m_artist->setHasChanged(false);
+        m_artist->clearImages();
+        m_artist->clearExtraFanartData();
         emit sigSaved(m_artist);
     }
     return saved;

@@ -380,16 +380,19 @@ void MakeMkvDialog::importFinished()
         m_movie->setFileLastModified(QFileInfo(m_movie->files().first().toString()).lastModified());
     }
     Q_UNUSED(m_movie->controller()->loadStreamDetailsFromFile());
-    m_movie->controller()->saveData(Manager::instance()->mediaCenterInterface());
-    m_movie->controller()->loadData(Manager::instance()->mediaCenterInterface());
+    const bool saved = m_movie->controller()->saveData(Manager::instance()->mediaCenterInterface());
+    if (saved) {
+        m_movie->controller()->loadData(Manager::instance()->mediaCenterInterface());
+    }
     mediaelch::MoviePersistence persistence{*Manager::instance()->database()};
     persistence.addMovie(m_movie, mediaelch::DirectoryPath(ui->comboImportDir->currentText()));
     Manager::instance()->database()->db().commit();
     Manager::instance()->movieModel()->addMovie(m_movie);
     m_movie = nullptr;
 
-    Notificator::instance()->notify(
-        Notificator::Class::Information, tr("MakeMKV import finished"), tr("Import with MakeMKV has finished"));
+    Notificator::instance()->notify(saved ? Notificator::Class::Information : Notificator::Class::Critical,
+        saved ? tr("MakeMKV import finished") : tr("Metadata could not be saved"),
+        saved ? tr("Import with MakeMKV has finished") : tr("The import finished, but its metadata could not be saved."));
 
     ui->loading->setVisible(false);
     ui->badgeSuccess->setText(tr("Import has finished"));

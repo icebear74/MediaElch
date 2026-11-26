@@ -56,6 +56,11 @@ void OmdbTvSeasonScrapeJob::loadSeason(SeasonNumber season)
                 episode->setSeason(season);
                 episode->setEpisode(epNum);
 
+                const ImdbId imdbId(obj.value("imdbID").toString());
+                if (imdbId.isValid()) {
+                    episode->setImdbId(imdbId);
+                }
+
                 if (details.contains(EpisodeScraperInfo::Title)) {
                     episode->setTitle(obj.value("Title").toString());
                 }

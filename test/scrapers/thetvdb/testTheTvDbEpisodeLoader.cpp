@@ -2,6 +2,7 @@
 
 #include "data/tv_show/TvShowEpisode.h"
 #include "scrapers/tv_show/thetvdb/TheTvDb.h"
+#include "scrapers/tv_show/thetvdb/TheTvDbEpisodeParser.h"
 #include "scrapers/tv_show/thetvdb/TheTvDbEpisodeScrapeJob.h"
 
 #include "test/helpers/scraper_helpers.h"
@@ -13,6 +14,15 @@
 using namespace std::chrono_literals;
 using namespace mediaelch;
 using namespace mediaelch::scraper;
+
+TEST_CASE("TheTvDb does not create an episode thumbnail URL when no image exists", "[episode][TheTvDb][parser]")
+{
+    TvShowEpisode episode({}, nullptr);
+    TheTvDbEpisodeParser parser(episode, SeasonOrder::Aired);
+    parser.parseInfos(QJsonObject{});
+
+    CHECK(episode.thumbnail().isEmpty());
+}
 
 TEST_CASE("TheTvDb scrapes episode details for The Simpsons S12E19", "[episode][TheTvDb][load_data]")
 {

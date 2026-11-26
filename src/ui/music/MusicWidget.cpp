@@ -118,26 +118,35 @@ void MusicWidget::onSaveInformation()
 
     int itemsToSave = qsizetype_to_int(artistsToSave.count() + albumsToSave.count());
     int itemsSaved = 0;
+    int failedSaves = 0;
     NotificationBox::instance()->showProgressBar(
         tr("Saving changed Artists and Albums"), Constants::MusicWidgetSaveProgressMessageId);
     QApplication::processEvents();
 
     for (Artist* artist : artistsToSave) {
-        artist->controller()->saveData(Manager::instance()->mediaCenterInterface());
+        if (!artist->controller()->saveData(Manager::instance()->mediaCenterInterface())) {
+            ++failedSaves;
+        }
         NotificationBox::instance()->progressBarProgress(
             ++itemsSaved, itemsToSave, Constants::MusicWidgetSaveProgressMessageId);
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     }
 
     for (Album* album : albumsToSave) {
-        album->controller()->saveData(Manager::instance()->mediaCenterInterface());
+        if (!album->controller()->saveData(Manager::instance()->mediaCenterInterface())) {
+            ++failedSaves;
+        }
         NotificationBox::instance()->progressBarProgress(
             ++itemsSaved, itemsToSave, Constants::MusicWidgetSaveProgressMessageId);
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     }
 
     NotificationBox::instance()->hideProgressBar(Constants::MusicWidgetSaveProgressMessageId);
-    NotificationBox::instance()->showSuccess(tr("All Artists and Albums Saved"));
+    if (failedSaves == 0) {
+        NotificationBox::instance()->showSuccess(tr("All Artists and Albums Saved"));
+    } else {
+        NotificationBox::instance()->showError(tr("%n artist(s) or album(s) could not be saved.", "", failedSaves));
+    }
 }
 
 void MusicWidget::onSaveAll()
@@ -158,19 +167,24 @@ void MusicWidget::onSaveAll()
 
     int itemsToSave = qsizetype_to_int(artistsToSave.count() + albumsToSave.count());
     int itemsSaved = 0;
+    int failedSaves = 0;
     NotificationBox::instance()->showProgressBar(
         tr("Saving changed Artists and Albums"), Constants::MusicWidgetSaveProgressMessageId);
     QApplication::processEvents();
 
     for (Artist* artist : artistsToSave) {
-        artist->controller()->saveData(Manager::instance()->mediaCenterInterface());
+        if (!artist->controller()->saveData(Manager::instance()->mediaCenterInterface())) {
+            ++failedSaves;
+        }
         NotificationBox::instance()->progressBarProgress(
             ++itemsSaved, itemsToSave, Constants::MusicWidgetSaveProgressMessageId);
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
     }
 
     for (Album* album : albumsToSave) {
-        album->controller()->saveData(Manager::instance()->mediaCenterInterface());
+        if (!album->controller()->saveData(Manager::instance()->mediaCenterInterface())) {
+            ++failedSaves;
+        }
         NotificationBox::instance()->progressBarProgress(
             ++itemsSaved, itemsToSave, Constants::MusicWidgetSaveProgressMessageId);
         QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -184,5 +198,9 @@ void MusicWidget::onSaveAll()
     }
 
     NotificationBox::instance()->hideProgressBar(Constants::MusicWidgetSaveProgressMessageId);
-    NotificationBox::instance()->showSuccess(tr("All Artists and Albums Saved"));
+    if (failedSaves == 0) {
+        NotificationBox::instance()->showSuccess(tr("All Artists and Albums Saved"));
+    } else {
+        NotificationBox::instance()->showError(tr("%n artist(s) or album(s) could not be saved.", "", failedSaves));
+    }
 }

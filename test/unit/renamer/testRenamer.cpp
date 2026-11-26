@@ -6,9 +6,12 @@
 #include "renamer/ConcertRenamer.h"
 #include "renamer/EpisodeRenamer.h"
 #include "renamer/MovieRenamer.h"
+#include "renamer/Renamer.h"
 #include "renamer/RenamerUtils.h"
 
+#include <QByteArray>
 #include <QDir>
+#include <QFile>
 #include <QTemporaryDir>
 
 /// Ensure that we can access all data/conditions that are provided as placeholders.
@@ -92,4 +95,29 @@ TEST_CASE("uniqueDirectoryName avoids existing directories", "[renamer][utils]")
         REQUIRE(dir.mkdir("Movie 2"));
         CHECK(mediaelch::uniqueDirectoryName(dir, "Movie") == "Movie 3");
     }
+}
+
+TEST_CASE("Renamer does not overwrite a temporary destination", "[renamer][files]")
+{
+    QTemporaryDir tmp;
+    REQUIRE(tmp.isValid());
+
+    const QString filePath = tmp.filePath("movie.mkv");
+    const QString tempPath = filePath + ".tmp";
+    QFile file(filePath);
+    REQUIRE(file.open(QIODevice::WriteOnly));
+    REQUIRE(file.write(QByteArray("original")) == 8);
+    file.close();
+
+    QFile existingTemp(tempPath);
+    REQUIRE(existingTemp.open(QIODevice::WriteOnly));
+    REQUIRE(existingTemp.write(QByteArray("keep")) == 4);
+    existingTemp.close();
+
+    CHECK_FALSE(Renamer::rename(filePath, filePath));
+    CHECK(QFile::exists(filePath));
+    CHECK(QFile::exists(tempPath));
+
+    REQUIRE(existingTemp.open(QIODevice::ReadOnly));
+    CHECK(existingTemp.readAll() == "keep");
 }

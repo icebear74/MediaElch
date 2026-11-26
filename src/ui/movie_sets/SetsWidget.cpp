@@ -441,11 +441,16 @@ void SetsWidget::saveSet()
     setNames << ui->sets->item(ui->sets->currentRow(), 0)->text();
     setNames.removeDuplicates();
 
+    int failedSaves = 0;
     for (const QString& setName : asConst(setNames)) {
+        QVector<Movie*> moviesToRetry;
         for (Movie* movie : asConst(m_moviesToSave[setName])) {
-            movie->controller()->saveData(Manager::instance()->mediaCenterInterface());
+            if (!movie->controller()->saveData(Manager::instance()->mediaCenterInterface())) {
+                moviesToRetry.append(movie);
+                ++failedSaves;
+            }
         }
-        m_moviesToSave[setName].clear();
+        m_moviesToSave[setName] = moviesToRetry;
 
         if (!m_setPosters[setName].isNull()) {
             Manager::instance()->mediaCenterInterface()->saveMovieSetPoster(setName, m_setPosters[setName]);
@@ -457,8 +462,12 @@ void SetsWidget::saveSet()
         }
     }
 
-    NotificationBox::instance()->showSuccess(
-        tr("<b>\"%1\"</b> Saved").arg(ui->sets->item(ui->sets->currentRow(), 0)->text()));
+    if (failedSaves == 0) {
+        NotificationBox::instance()->showSuccess(
+            tr("<b>\"%1\"</b> Saved").arg(ui->sets->item(ui->sets->currentRow(), 0)->text()));
+    } else {
+        NotificationBox::instance()->showError(tr("%n movie(s) in this set could not be saved.", "", failedSaves));
+    }
 }
 
 /**

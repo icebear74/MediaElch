@@ -7,6 +7,7 @@
 
 #include <QDateTime>
 #include <QDomDocument>
+#include <QUrl>
 #include <chrono>
 
 using namespace std::chrono_literals;
@@ -44,6 +45,27 @@ TEST_CASE("TV show XML writer for Kodi v18", "[data][tvshow][kodi][nfo]")
         mediaelch::kodi::TvShowXmlWriterGeneric writer(mediaelch::KodiVersion(18), tvShow);
         QString actual = writer.getTvShowXml(true).trimmed();
         test::compareXmlAgainstResourceFile(actual, filename);
+    }
+
+    SECTION("Artwork data stays below Kodi text-field limits")
+    {
+        constexpr int ArtworkCount = 1000;
+        constexpr int ArtworkUrlLength = 1000;
+
+        TvShow show;
+        for (int i = 0; i < ArtworkCount; ++i) {
+            Poster poster;
+            poster.originalUrl = QUrl("https://example.test/" + QString(ArtworkUrlLength, 'p'));
+            poster.thumbUrl = poster.originalUrl;
+            show.addPoster(poster);
+            show.addBackdrop(poster);
+        }
+
+        mediaelch::kodi::TvShowXmlWriterGeneric writer(mediaelch::KodiVersion(18), show);
+        const QByteArray xml = writer.getTvShowXml(true);
+
+        CHECK(xml.size() < 2 * 65535);
+        CHECK(xml.count("<thumb") < 2 * ArtworkCount);
     }
 
     SECTION("read / write details: Game of Thrones")

@@ -42,6 +42,11 @@ void OmdbTvShowScrapeJob::parseAndAssignInfos(const QJsonDocument& json)
     QJsonObject obj = json.object();
     const auto& details = config().details;
 
+    const ImdbId imdbId(obj.value("imdbID").toString());
+    if (imdbId.isValid()) {
+        m_tvShow->setImdbId(imdbId);
+    }
+
     if (details.contains(ShowScraperInfo::Title)) {
         m_tvShow->setTitle(obj.value("Title").toString());
     }

@@ -214,8 +214,12 @@ QByteArray TvShowXmlWriterGeneric::getTvShowXml(bool testMode)
     KodiXml::writeStringsAsOneTagEach(xml, "tag", m_show.tags());
 
     if (writeThumbUrlsToNfo()) {
+        qsizetype posterBytesWritten = 0;
         const auto& posters = m_show.posters();
         for (const Poster& poster : posters) {
+            if (!canWriteThumb(poster, posterBytesWritten)) {
+                continue;
+            }
             xml.writeStartElement("thumb");
             if (!poster.language.isEmpty()) {
                 xml.writeAttribute("language", poster.language);
@@ -235,6 +239,9 @@ QByteArray TvShowXmlWriterGeneric::getTvShowXml(bool testMode)
 
         const auto& banners = m_show.banners();
         for (const Poster& banner : banners) {
+            if (!canWriteThumb(banner, posterBytesWritten)) {
+                continue;
+            }
             xml.writeStartElement("thumb");
             QString aspect = banner.aspect.isEmpty() ? "banner" : banner.aspect;
             if (!banner.language.isEmpty()) {
@@ -250,7 +257,7 @@ QByteArray TvShowXmlWriterGeneric::getTvShowXml(bool testMode)
 
         const auto& seasonPosters = m_show.seasonPosters(SeasonNumber::NoSeason, true);
         for (const Poster& poster : seasonPosters) {
-            if (poster.season != SeasonNumber::NoSeason) {
+            if (poster.season != SeasonNumber::NoSeason && canWriteThumb(poster, posterBytesWritten)) {
                 xml.writeStartElement("thumb");
                 if (!poster.language.isEmpty()) {
                     xml.writeAttribute("language", poster.language);
@@ -268,7 +275,7 @@ QByteArray TvShowXmlWriterGeneric::getTvShowXml(bool testMode)
 
         const auto& seasonBanners = m_show.seasonBanners(SeasonNumber::NoSeason, true);
         for (const Poster& banner : seasonBanners) {
-            if (banner.season != SeasonNumber::NoSeason) {
+            if (banner.season != SeasonNumber::NoSeason && canWriteThumb(banner, posterBytesWritten)) {
                 xml.writeStartElement("thumb");
                 if (!banner.language.isEmpty()) {
                     xml.writeAttribute("language", banner.language);
@@ -285,9 +292,13 @@ QByteArray TvShowXmlWriterGeneric::getTvShowXml(bool testMode)
         }
 
         if (!m_show.backdrops().isEmpty()) {
+            qsizetype backdropBytesWritten = 0;
             xml.writeStartElement("fanart");
             const auto& backdrops = m_show.backdrops();
             for (const Poster& poster : backdrops) {
+                if (!canWriteThumb(poster, backdropBytesWritten)) {
+                    continue;
+                }
                 xml.writeStartElement("thumb");
                 xml.writeAttribute("preview", poster.thumbUrl.toString());
 

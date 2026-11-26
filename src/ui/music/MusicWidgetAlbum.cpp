@@ -187,13 +187,19 @@ void MusicWidgetAlbum::onSaveInformation()
 {
     onSetEnabled(false);
     int id = NotificationBox::instance()->showMessage(tr("Saving Album..."));
-    m_album->controller()->saveData(Manager::instance()->mediaCenterInterface());
-    m_album->controller()->loadData(Manager::instance()->mediaCenterInterface(), true);
-    updateAlbumInfo();
+    const bool saved = m_album->controller()->saveData(Manager::instance()->mediaCenterInterface());
+    if (saved) {
+        m_album->controller()->loadData(Manager::instance()->mediaCenterInterface(), true);
+        updateAlbumInfo();
+    }
     onSetEnabled(true);
     NotificationBox::instance()->removeMessage(id);
-    NotificationBox::instance()->showSuccess(tr("<b>\"%1\"</b> Saved").arg(m_album->title()));
-    ui->buttonRevert->setVisible(false);
+    if (saved) {
+        NotificationBox::instance()->showSuccess(tr("<b>\"%1\"</b> Saved").arg(m_album->title()));
+    } else {
+        NotificationBox::instance()->showError(tr("Could not save album \"%1\".").arg(m_album->title()));
+    }
+    ui->buttonRevert->setVisible(m_album->hasChanged());
 }
 
 void MusicWidgetAlbum::onStartScraperSearch()

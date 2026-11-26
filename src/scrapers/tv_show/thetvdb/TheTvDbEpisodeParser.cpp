@@ -94,8 +94,10 @@ void TheTvDbEpisodeParser::parseInfos(const QJsonObject& episodeObj)
         }
     }
 
-    m_episode.setThumbnail(
-        TheTvDbApi::makeFullAssetUrl(QStringLiteral("/banners/%2").arg(episodeObj.value("filename").toString())));
+    const QString filename = episodeObj.value("filename").toString();
+    if (!filename.isEmpty()) {
+        m_episode.setThumbnail(TheTvDbApi::makeFullAssetUrl(QStringLiteral("/banners/%1").arg(filename)));
+    }
 
     m_episode.setInfosLoaded(true);
 }

@@ -216,7 +216,9 @@ void MovieMultiScrapeDialog::scrapeNext()
         return;
     }
     if (m_currentMovie != nullptr && ui->chkAutoSave->isChecked()) {
-        m_currentMovie->controller()->saveData(Manager::instance()->mediaCenterInterface());
+        if (!m_currentMovie->controller()->saveData(Manager::instance()->mediaCenterInterface())) {
+            showError(tr("Could not save movie \"%1\".").arg(m_currentMovie->title()));
+        }
     }
     if (m_queue.isEmpty()) {
         qCInfo(generic) << "[Multi Movie Scraper] Finished scraping of" << m_movies.count() << "movies";

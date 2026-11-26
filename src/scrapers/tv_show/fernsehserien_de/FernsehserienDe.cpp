@@ -7,6 +7,7 @@
 #include "scrapers/ScraperUtils.h"
 #include "scrapers/tv_show/ShowMerger.h"
 
+#include <algorithm>
 #include <QRegularExpression>
 #include <QTimer>
 
@@ -126,6 +127,14 @@ private:
     Result m_next;
     QRegularExpressionMatchIterator m_matches;
 };
+
+bool hasOnlySeasonlessEpisodes(const QVector<EpisodeListParser::Result>& episodes)
+{
+    return !episodes.isEmpty()
+           && std::all_of(episodes.cbegin(), episodes.cend(), [](const EpisodeListParser::Result& episode) {
+                  return episode.seasonNumber == SeasonNumber::NoSeason;
+              });
+}
 
 void normalizeActorRole(QString& role)
 {
@@ -668,7 +677,10 @@ void FernsehserienDeSeasonScrapeJob::parseSeasonPageAndStartLoading(const QStrin
         allEpisodes.push_back(EpisodeEntry{next.seasonNumber, next.episodeNumber, next.id});
     }
 
-    if (config().shouldLoadAllSeasons()) {
+    const bool singleSeasonWithoutSeasonNumbers =
+        config().seasons.contains(SeasonNumber(1)) && hasOnlySeasonlessEpisodes(allEpisodes);
+
+    if (config().shouldLoadAllSeasons() || singleSeasonWithoutSeasonNumbers) {
         m_episodeIds = allEpisodes;
     } else {
         // Use only those seasons that are actually requested
@@ -699,7 +711,11 @@ void FernsehserienDeSeasonScrapeJob::loadNextEpisode()
         if (!job->hasError()) {
             auto* episode = new TvShowEpisode({}, this);
             copyDetailsToEpisode(*episode, job->episode(), job->config().details);
-            episode->setSeason(next.seasonNumber);
+            const SeasonNumber season = next.seasonNumber == SeasonNumber::NoSeason
+                                            && config().seasons.contains(SeasonNumber(1))
+                                        ? SeasonNumber(1)
+                                        : next.seasonNumber;
+            episode->setSeason(season);
             episode->setEpisode(next.episodeNumber);
 
             m_episodes[{episode->seasonNumber(), episode->episodeNumber()}] = episode;
@@ -825,15 +841,32 @@ void FernsehserienDeEpisodeScrapeJob::onSeasonPageLoaded()
 
 void FernsehserienDeEpisodeScrapeJob::parseAndLoadEpisodeIdFromSeason(const QString& html)
 {
-    QString episodeId;
+    QVector<EpisodeListParser::Result> episodes;
     EpisodeListParser parser = EpisodeListParser::forHtml(html);
     while (parser.hasNext()) {
-        EpisodeListParser::Result next = parser.next();
+        episodes.push_back(parser.next());
+    }
+
+    QString episodeId;
+    for (const EpisodeListParser::Result& next : episodes) {
 
         if (next.seasonNumber == config().identifier.seasonNumber
             && next.episodeNumber == config().identifier.episodeNumber) {
             episodeId = next.id;
             break;
+        }
+    }
+
+    if (episodeId.isEmpty() && config().identifier.seasonNumber == SeasonNumber(1)
+        && hasOnlySeasonlessEpisodes(episodes)) {
+        for (const EpisodeListParser::Result& next : episodes) {
+            if (next.episodeNumber == config().identifier.episodeNumber) {
+                if (!episodeId.isEmpty()) {
+                    episodeId.clear();
+                    break;
+                }
+                episodeId = next.id;
+            }
         }
     }
 

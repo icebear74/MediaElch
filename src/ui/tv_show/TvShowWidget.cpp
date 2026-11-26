@@ -161,10 +161,13 @@ void TvShowWidget::onSaveInformation()
         tr("Saving changed TV Shows and Episodes"), Constants::TvShowWidgetSaveProgressMessageId);
     QApplication::processEvents();
 
+    int failedSaves = 0;
     for (elch_ssize_t i = 0, n = shows.count(); i < n; ++i) {
         itemsSaved++;
         if (shows.at(i)->hasChanged()) {
-            shows.at(i)->saveData(Manager::instance()->mediaCenterInterfaceTvShow());
+            if (!shows.at(i)->saveData(Manager::instance()->mediaCenterInterfaceTvShow())) {
+                ++failedSaves;
+            }
             NotificationBox::instance()->progressBarProgress(
                 itemsSaved, itemsToSave, Constants::TvShowWidgetSaveProgressMessageId);
             QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -177,11 +180,7 @@ void TvShowWidget::onSaveInformation()
         if (episode->hasChanged()) {
             const bool success = episode->saveData(Manager::instance()->mediaCenterInterfaceTvShow());
             if (!success) {
-                const QString errorMessage = tr("Could not save episode S%1E%2 of show \"%3\"")
-                                                 .arg(episode->seasonNumber().toPaddedString(),
-                                                     episode->episodeNumber().toPaddedString(),
-                                                     episode->showTitle());
-                NotificationBox::instance()->showError(errorMessage);
+                ++failedSaves;
             }
             NotificationBox::instance()->progressBarProgress(
                 itemsSaved, itemsToSave, Constants::TvShowWidgetSaveProgressMessageId);
@@ -190,7 +189,11 @@ void TvShowWidget::onSaveInformation()
     }
 
     NotificationBox::instance()->hideProgressBar(Constants::TvShowWidgetSaveProgressMessageId);
-    NotificationBox::instance()->showSuccess(tr("TV Shows and Episodes Saved"));
+    if (failedSaves == 0) {
+        NotificationBox::instance()->showSuccess(tr("TV Shows and Episodes Saved"));
+    } else {
+        NotificationBox::instance()->showError(tr("%n TV show(s) or episode(s) could not be saved.", "", failedSaves));
+    }
 }
 
 /**
@@ -218,17 +221,22 @@ void TvShowWidget::onSaveAll()
         tr("Saving changed TV Shows and Episodes"), Constants::TvShowWidgetSaveProgressMessageId);
     QApplication::processEvents();
 
+    int failedSaves = 0;
     for (elch_ssize_t i = 0, n = shows.count(); i < n; ++i) {
         if (shows[i]->hasChanged()) {
             qCDebug(generic) << "SAVING TV SHOW" << shows[i]->title();
-            shows[i]->saveData(Manager::instance()->mediaCenterInterfaceTvShow());
+            if (!shows[i]->saveData(Manager::instance()->mediaCenterInterfaceTvShow())) {
+                ++failedSaves;
+            }
             NotificationBox::instance()->progressBarProgress(
                 ++episodesSaved, episodesToSave, Constants::TvShowWidgetSaveProgressMessageId);
             QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
         }
         for (int x = 0, y = qsizetype_to_int(shows[i]->episodes().count()); x < y; ++x) {
             if (shows[i]->episodes().at(x)->hasChanged()) {
-                shows[i]->episodes().at(x)->saveData(Manager::instance()->mediaCenterInterfaceTvShow());
+                if (!shows[i]->episodes().at(x)->saveData(Manager::instance()->mediaCenterInterfaceTvShow())) {
+                    ++failedSaves;
+                }
                 NotificationBox::instance()->progressBarProgress(
                     ++episodesSaved, episodesToSave, Constants::TvShowWidgetSaveProgressMessageId);
                 QApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
@@ -236,7 +244,11 @@ void TvShowWidget::onSaveAll()
         }
     }
     NotificationBox::instance()->hideProgressBar(Constants::TvShowWidgetSaveProgressMessageId);
-    NotificationBox::instance()->showSuccess(tr("All TV Shows and Episodes Saved"));
+    if (failedSaves == 0) {
+        NotificationBox::instance()->showSuccess(tr("All TV Shows and Episodes Saved"));
+    } else {
+        NotificationBox::instance()->showError(tr("%n TV show(s) or episode(s) could not be saved.", "", failedSaves));
+    }
 }
 
 /**

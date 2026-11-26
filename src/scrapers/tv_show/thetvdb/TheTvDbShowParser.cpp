@@ -68,7 +68,10 @@ void TheTvDbShowParser::parseActors(const QJsonObject& json)
         actor.id = QString::number(actorObj.value("id").toInt());
         actor.name = actorObj.value("name").toString();
         actor.role = actorObj.value("role").toString();
-        actor.thumb = TheTvDbApi::makeFullAssetUrl("/banners/" + actorObj.value("image").toString()).toString();
+        const QString image = actorObj.value("image").toString();
+        if (!image.isEmpty()) {
+            actor.thumb = TheTvDbApi::makeFullAssetUrl("/banners/" + image).toString();
+        }
 
         m_show.addActor(actor);
     }
@@ -81,11 +84,16 @@ void TheTvDbShowParser::parseImages(const QJsonObject& json)
     for (const auto& imageValue : images) {
         const auto imageObj = imageValue.toObject();
         const QString keyType = imageObj.value("keyType").toString();
+        const QString fileName = imageObj.value("fileName").toString();
+        if (fileName.isEmpty()) {
+            continue;
+        }
 
         Poster p;
         p.id = QString::number(imageObj.value("id").toInt());
-        p.originalUrl = TheTvDbApi::makeFullAssetUrl("/banners/" + imageObj.value("fileName").toString());
-        p.thumbUrl = TheTvDbApi::makeFullAssetUrl("/banners/" + imageObj.value("thumbnail").toString());
+        p.originalUrl = TheTvDbApi::makeFullAssetUrl("/banners/" + fileName);
+        const QString thumbnail = imageObj.value("thumbnail").toString();
+        p.thumbUrl = thumbnail.isEmpty() ? p.originalUrl : TheTvDbApi::makeFullAssetUrl("/banners/" + thumbnail);
 
         const QStringList resolution = imageObj.value("resolution").toString().split('x');
         if (resolution.length() == 2) {

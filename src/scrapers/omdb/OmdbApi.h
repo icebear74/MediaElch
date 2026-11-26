@@ -43,6 +43,7 @@ public:
     void loadShow(const ImdbId& imdbId, ApiCallback callback);
     void loadSeason(const ImdbId& showId, int season, ApiCallback callback);
     void loadEpisode(const ImdbId& episodeId, ApiCallback callback);
+    void loadEpisode(const ImdbId& showId, int season, int episode, ApiCallback callback);
 
 private:
     QUrl makeApiUrl(const QUrlQuery& query) const;

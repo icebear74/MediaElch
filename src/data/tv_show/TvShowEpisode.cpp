@@ -229,9 +229,11 @@ bool TvShowEpisode::saveData(MediaCenterInterface* mediaCenterInterface)
     if (!m_infoLoaded) {
         m_infoLoaded = saved;
     }
-    setSyncNeeded(true);
-    setChanged(false);
-    clearImages();
+    if (saved) {
+        setSyncNeeded(true);
+        setChanged(false);
+        clearImages();
+    }
     return saved;
 }
 

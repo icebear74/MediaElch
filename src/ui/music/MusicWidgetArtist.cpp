@@ -195,13 +195,19 @@ void MusicWidgetArtist::onSaveInformation()
 {
     onSetEnabled(false);
     int id = NotificationBox::instance()->showMessage(tr("Saving Artist..."));
-    m_artist->controller()->saveData(Manager::instance()->mediaCenterInterface());
-    m_artist->controller()->loadData(Manager::instance()->mediaCenterInterface(), true);
-    updateArtistInfo();
+    const bool saved = m_artist->controller()->saveData(Manager::instance()->mediaCenterInterface());
+    if (saved) {
+        m_artist->controller()->loadData(Manager::instance()->mediaCenterInterface(), true);
+        updateArtistInfo();
+    }
     onSetEnabled(true);
     NotificationBox::instance()->removeMessage(id);
-    NotificationBox::instance()->showSuccess(tr("<b>\"%1\"</b> Saved").arg(m_artist->name()));
-    ui->buttonRevert->setVisible(false);
+    if (saved) {
+        NotificationBox::instance()->showSuccess(tr("<b>\"%1\"</b> Saved").arg(m_artist->name()));
+    } else {
+        NotificationBox::instance()->showError(tr("Could not save artist \"%1\".").arg(m_artist->name()));
+    }
+    ui->buttonRevert->setVisible(m_artist->hasChanged());
 }
 
 void MusicWidgetArtist::onStartScraperSearch()

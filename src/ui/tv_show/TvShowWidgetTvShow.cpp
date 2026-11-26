@@ -470,13 +470,19 @@ void TvShowWidgetTvShow::onSaveInformation()
 
     onSetEnabled(false);
     m_savingWidget->show();
-    m_show->saveData(Manager::instance()->mediaCenterInterfaceTvShow());
-    m_show->loadData(Manager::instance()->mediaCenterInterfaceTvShow(), true);
-    updateTvShowInfo();
+    const bool saved = m_show->saveData(Manager::instance()->mediaCenterInterfaceTvShow());
+    if (saved) {
+        m_show->loadData(Manager::instance()->mediaCenterInterfaceTvShow(), true);
+        updateTvShowInfo();
+    }
     m_savingWidget->hide();
     onSetEnabled(true);
-    ui->buttonRevert->setVisible(false);
-    NotificationBox::instance()->showSuccess(tr("<b>\"%1\"</b> Saved").arg(m_show->title()));
+    ui->buttonRevert->setVisible(m_show->hasChanged());
+    if (saved) {
+        NotificationBox::instance()->showSuccess(tr("<b>\"%1\"</b> Saved").arg(m_show->title()));
+    } else {
+        NotificationBox::instance()->showError(tr("Could not save TV show \"%1\".").arg(m_show->title()));
+    }
 }
 
 /**

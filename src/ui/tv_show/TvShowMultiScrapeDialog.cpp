@@ -442,11 +442,18 @@ void TvShowMultiScrapeDialog::saveCurrentItem()
     }
 
     if (m_currentShow != nullptr) {
-        m_currentShow->saveData(Manager::instance()->mediaCenterInterfaceTvShow());
+        if (!m_currentShow->saveData(Manager::instance()->mediaCenterInterfaceTvShow())) {
+            showError(tr("Could not save TV show \"%1\".").arg(m_currentShow->title()));
+        }
     }
 
     if (m_currentEpisode != nullptr) {
-        m_currentEpisode->saveData(Manager::instance()->mediaCenterInterfaceTvShow());
+        if (!m_currentEpisode->saveData(Manager::instance()->mediaCenterInterfaceTvShow())) {
+            showError(tr("Could not save episode S%1E%2 of show \"%3\"")
+                          .arg(m_currentEpisode->seasonNumber().toPaddedString(),
+                              m_currentEpisode->episodeNumber().toPaddedString(),
+                              m_currentEpisode->showTitle()));
+        }
     }
 }
 
