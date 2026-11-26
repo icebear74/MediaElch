@@ -130,10 +130,18 @@ void TvShowWidget::onSetDisabledTrue()
 void TvShowWidget::onSaveInformation()
 {
     QVector<TvShow*> shows = TvShowFilesWidget::instance().selectedShows();
-    QVector<TvShowEpisode*> episodes = TvShowFilesWidget::instance().selectedEpisodes(false);
+    QVector<TvShowEpisode*> episodes = TvShowFilesWidget::instance().selectedEpisodes();
     QVector<TvShow*> seasons = TvShowFilesWidget::instance().selectedSeasons();
 
-    if (shows.count() == 1 && episodes.count() == 0 && seasons.count() == 0 && ui->stackedWidget->currentIndex() == 0) {
+    bool hasChangedEpisode = false;
+    for (const TvShowEpisode* episode : asConst(episodes)) {
+        if (episode->hasChanged()) {
+            hasChangedEpisode = true;
+            break;
+        }
+    }
+
+    if (shows.count() == 1 && !hasChangedEpisode && seasons.count() == 0 && ui->stackedWidget->currentIndex() == 0) {
         ui->tvShowWidget->onSaveInformation();
         return;
     }
@@ -147,7 +155,7 @@ void TvShowWidget::onSaveInformation()
     }
 
 
-    // More than one item is selected
+    // Saving a selected show/season also persists changed child episodes.
 
     for (TvShow* show : seasons) {
         if (!shows.contains(show)) {
@@ -203,6 +211,13 @@ void TvShowWidget::onSaveAll()
 {
     qCDebug(generic) << "[TvShowWidget] Save all episodes";
     QVector<TvShow*> shows = Manager::instance()->tvShowModel()->tvShows();
+    for (const TvShow* show : asConst(shows)) {
+        if (show->downloadsInProgress()) {
+            NotificationBox::instance()->showWarning(tr("Please wait until TV show image downloads are finished."));
+            return;
+        }
+    }
+
     int episodesToSave = 0;
     int episodesSaved = 0;
     for (elch_ssize_t i = 0, n = shows.count(); i < n; ++i) {

@@ -13,6 +13,8 @@
 #include <QDir>
 #include <QFileInfo>
 
+#include <algorithm>
+
 namespace mediaelch {
 
 MovieRenamerPlaceholders::~MovieRenamerPlaceholders() = default;
@@ -234,6 +236,13 @@ MovieRenamer::RenameError MovieRenamer::renameMovie(Movie& movie)
                 }
 
                 QStringList subtitleFiles = currentDir.entryList(subtitlePatterns, QDir::Files | QDir::NoDotAndDotDot);
+                subtitleFiles.erase(
+                    std::remove_if(subtitleFiles.begin(),
+                        subtitleFiles.end(),
+                        [&baseName](const QString& fileName) {
+                            return !mediaelch::fileNameMatchesBaseName(fileName, baseName);
+                        }),
+                    subtitleFiles.end());
                 QList<Subtitle*> detectedSubtitles;
 
                 for (const QString& subtitleFile : subtitleFiles) {
@@ -259,9 +268,15 @@ MovieRenamer::RenameError MovieRenamer::renameMovie(Movie& movie)
                                 // Check if this subtitle is already tracked in the movie object
                                 bool subtitleTracked = false;
                                 for (Subtitle* sub : movie.subtitles()) {
-                                    if (sub->files().contains(subtitleFile)) {
+                                    QStringList trackedFiles = sub->files();
+                                    const int trackedIndex = trackedFiles.indexOf(subtitleFile);
+                                    if (trackedIndex >= 0) {
+                                        trackedFiles[trackedIndex] = newSubName;
+                                        sub->setFiles(trackedFiles, false);
+                                        movie.setChanged(true);
                                         subtitleTracked = true;
-                                        break;
+                                    } else if (sub->files().contains(newSubName)) {
+                                        subtitleTracked = true;
                                     }
                                 }
 
@@ -329,11 +344,18 @@ MovieRenamer::RenameError MovieRenamer::renameMovie(Movie& movie)
                     QStringList newSubFiles;
                     bool hasCurrentNewName = false;
                     for (const QString& subFile : subtitle->files()) {
+                        if (!mediaelch::fileNameMatchesBaseName(subFile, baseName)) {
+                            newSubFiles << subFile;
+                            continue;
+                        }
+
                         QFileInfo subFi(fi.canonicalPath() + "/" + subFile);
                         QString newSubFileName = subFileName + "." + subFi.suffix();
-                        if (subFile != newSubFileName) {
+                        if (subFile == newSubFileName) {
+                            newSubFiles << subFile;
+                            FilmFiles.append(subFile);
+                        } else {
                             hasCurrentNewName = true;
-                            hasChangedSubTitles = true;
                             int row = m_dialog->addResultToTable(subFile, newSubFileName, RenameOperation::Rename);
                             if (!m_config.dryRun) {
                                 if (!rename(fi.canonicalPath() + "/" + subFile,
@@ -343,6 +365,7 @@ MovieRenamer::RenameError MovieRenamer::renameMovie(Movie& movie)
                                 } else {
                                     newSubFiles << newSubFileName;
                                     FilmFiles.append(newSubFileName);
+                                    hasChangedSubTitles = true;
                                 }
                             } else {
                                 FilmFiles.append(newSubFileName);
@@ -361,6 +384,13 @@ MovieRenamer::RenameError MovieRenamer::renameMovie(Movie& movie)
                 newMovieFiles.append(fi.fileName());
             }
         }
+
+        if (!m_config.dryRun) {
+            for (Subtitle* subtitle : movie.subtitles()) {
+                FilmFiles.append(subtitle->files());
+            }
+        }
+        FilmFiles.removeDuplicates();
 
         // Rename additional files (nfo, poster, etc.)
         const auto renameFileType = [&](QString filePath, DataFileType dataFileType) -> void {

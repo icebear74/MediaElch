@@ -51,6 +51,9 @@ namespace mediaelch {
 ///          free name is found.
 QString uniqueDirectoryName(const QDir& dir, const QString& desiredName);
 
+/// Returns whether a filename is the base file or a delimited sidecar of it.
+bool fileNameMatchesBaseName(const QString& fileName, const QString& baseName);
+
 #ifdef QT_DEBUG
 /// Test utility for asserting data / placeholder consistency.
 /// Use via macro MediaElch_Ensure_Data_Matches_Placeholders

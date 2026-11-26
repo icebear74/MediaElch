@@ -97,6 +97,14 @@ TEST_CASE("uniqueDirectoryName avoids existing directories", "[renamer][utils]")
     }
 }
 
+TEST_CASE("fileNameMatchesBaseName rejects partial filename prefixes", "[renamer][utils]")
+{
+    CHECK(mediaelch::fileNameMatchesBaseName("Movie Part 1.en.srt", "Movie Part 1"));
+    CHECK(mediaelch::fileNameMatchesBaseName("movie part 1.mkv", "Movie Part 1"));
+    CHECK_FALSE(mediaelch::fileNameMatchesBaseName("Movie Part 10.en.srt", "Movie Part 1"));
+    CHECK_FALSE(mediaelch::fileNameMatchesBaseName("Movie Part 1 Extended.en.srt", "Movie Part 1"));
+}
+
 TEST_CASE("Renamer does not overwrite a temporary destination", "[renamer][files]")
 {
     QTemporaryDir tmp;

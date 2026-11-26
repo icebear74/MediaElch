@@ -3,6 +3,7 @@
 #include "log/Log.h"
 #include "utils/Containers.h"
 
+#include <QFileInfo>
 #include <QSet>
 
 namespace mediaelch {
@@ -15,6 +16,20 @@ QString uniqueDirectoryName(const QDir& dir, const QString& desiredName)
         name = desiredName + " " + QString::number(++suffix);
     }
     return name;
+}
+
+bool fileNameMatchesBaseName(const QString& fileName, const QString& baseName)
+{
+    if (baseName.isEmpty()) {
+        return false;
+    }
+
+    const QString fileBaseName = QFileInfo(fileName).completeBaseName();
+    if (!fileBaseName.startsWith(baseName, Qt::CaseInsensitive)) {
+        return false;
+    }
+
+    return fileBaseName.size() == baseName.size() || !fileBaseName.at(baseName.size()).isLetterOrNumber();
 }
 
 #ifdef QT_DEBUG

@@ -552,17 +552,16 @@ void TvShowWidgetTvShow::onInfoLoadDone(TvShow* show, QSet<ShowScraperInfo> deta
     };
 
     if (show->tvdbId().isValid() && !types.isEmpty() && details.contains(ShowScraperInfo::ExtraArts)) {
-        Manager::instance()->fanartTv()->tvShowImages(show, show->tvdbId(), types, locale);
         connect(Manager::instance()->fanartTv(),
             &mediaelch::scraper::ImageProvider::sigTvShowImagesLoaded,
             this,
             &TvShowWidgetTvShow::onLoadDone,
             Qt::UniqueConnection);
+        Manager::instance()->fanartTv()->tvShowImages(show, show->tvdbId(), types, locale);
     } else {
         QMap<ImageType, QVector<Poster>> map;
         onLoadDone(show, map);
     }
-    NotificationBox::instance()->hideProgressBar(show->property("progressBarId").toInt());
 }
 
 /**
@@ -573,6 +572,7 @@ void TvShowWidgetTvShow::onLoadDone(TvShow* show, QMap<ImageType, QVector<Poster
 {
     if (m_show == nullptr) {
         qCDebug(generic) << "My show is invalid";
+        NotificationBox::instance()->hideProgressBar(show->property("progressBarId").toInt());
         return;
     }
 
@@ -785,6 +785,7 @@ void TvShowWidgetTvShow::onLoadDone(TvShow* show, QMap<ImageType, QVector<Poster
         emit sigSetActionSearchEnabled(true, MainWidgets::TvShows);
         emit sigSetActionSaveEnabled(true, MainWidgets::TvShows);
     }
+    NotificationBox::instance()->hideProgressBar(show->property("progressBarId").toInt());
     ui->buttonRevert->setVisible(true);
 }
 

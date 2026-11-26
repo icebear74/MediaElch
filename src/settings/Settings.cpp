@@ -865,7 +865,7 @@ void Settings::renamings(RenameType renameType,
 
 int Settings::tvShowUpdateOption()
 {
-    return settings()->value(KEY_TV_SHOW_UPDATE_OPTION, 0).toInt();
+    return settings()->value(KEY_TV_SHOW_UPDATE_OPTION, 2).toInt();
 }
 
 void Settings::setTvShowUpdateOption(int option)
